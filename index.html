@@ -22,29 +22,6 @@
                 margin: 0;
                 background:  #f0c4c4;
             }
-            /*.sparkle{
-                position: absolute;
-                width: 10px;
-                height:10px;
-                background:white;
-                transform: rotate(45deg);
-                border-radius: 50%;
-                box-shadow:0 0 10px white, 0 0 20px rgba(255,255,255,0,8);
-                opacity: 0.8;
-                animation: sparkle-animation 3s ease-in-out infinite, floaty-motion 5s ease-in-out infinite;
-            }
-            @keyframes sparkle-animation{
-                0% {transform: scale(1) rotate(45deg); opacity: 1;}
-                50% {transform: scale(1.5) rotate(45deg); opacity: 0.6;}
-                100% {transform: scale(1) rotate(45deg); opacity:0;}
-            }
-            @keyframes floaty-motion{
-                0% {transform: translate(0, 0) rotate(45deg);}
-                25% {transform: translate(-10px, -15px) rotate(50deg);}
-                50% {transform: translate(10px, 5px) rotate(40deg);}
-                75% {transform: translate(-5px, 10px) rotate(55deg);}
-                100% {transform: translate(0, 0) rotate(45deg);}
-            } */
             .container{
                 display:flex;
                 flex-direction:column;
@@ -73,7 +50,6 @@
                 padding: 3px 20px;
                 font-size: 20px;
                 font-family: "Minecraftia", sans-serif;
-                /* font-weight: bold; */
                 border: none;
                 border-radius: 20px;
                 transition: all 0.3s ease-out;
@@ -89,7 +65,35 @@
                 transform: scale(1) translateY(3px);
                 box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
             }
-            
+            .message {
+                font-size: 1rem;
+                margin-top: 20px;
+                color: black;
+                text-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+                min-height:40px;
+                opacity: 0;
+                transition: opacity 0.5s ease-out;
+            }
+            .calendar {
+                display: grid;
+                grid-template-columns: repeat(7,1fr);
+                grid-gap: 5px;
+                margin-top:20px;
+            }
+            .calendar-day{
+                padding: 10px;
+                background-color: #fff3d9;
+                border-radius:5px;
+                cursor: pointer;
+                text-align: center;
+                transition: background-color 0.3s;
+            }
+            .calendar-day:hover{
+                background-color: #fff0b3;
+            }
+            .calendar-day.selected{
+                background-color: #ffe2b1;
+            }
         </style>
 </head>
 <body>
@@ -101,25 +105,99 @@
             <button class = "mood-button" onclick="changeMood('tired')" style="background: #cfcfcf;"> Tired</button>
             <button class = "mood-button" onclick="changeMood('excited')" style="background: #fff3d9;"> Excited</button>
         </div>
+        <div class="message" id ="message"></div>
+        <div id="calendar" class="calendar"></div>
     </div>
-    <script> 
-        /*
-        function createSparkle(){
-            const sparkle = document.createElement("div");
-            sparkle.classList.add("sparkle");
+    <script>
+        function generateCalendar() {
+                const now = new Date();
+                const month = now.getMonth();
+                const year = now.getFullYear();
+                const firstDay = new Date(year,month,1).getDay();
+                const daysInMonth = new Date(year,month + 1, 0).getDate();
 
-            sparkle.style.left = `${Math.random()*window.innerWidth}px`;
-            sparkle.style.top = `${Math.random()*window.innerHeight}px`;
+                const calendarContainer = document.getElementById("calendar");
+                calendarContainer.innerHTML = ''
 
-            document.body.appendChild(sparkle);
+                const daysOfWeek = ["Sun", "Mon", "Tues", "Weds", "Thurs", "Fri", "Sat"];
+                for (let day of daysOfWeek) {
+                    const dayCell = document.createElement("div");
+                    dayCell.textContent = day;
+                    calendarContainer.appendChild(dayCell);
+                }
 
-            setTimeout(() => {
-                sparkle.remove();
-            }, 1500);
+                for (let i = 0; i < firstDay; i++) {
+                    const blankCell = document.createElement("div");
+                    calendarContainer.appendChild(blankCell);
+                }
 
+                let savedMoods = JSON.parse(localStorage.getItem('moods')) || {};
+
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const dayCell = document.createElement("div");
+                    dayCell.classList.add("calendar-day");
+                    dayCell.textContent = i;
+
+                    if (savedMoods[i]) {
+                        dayCell.style.backgroundColor = getMoodColor(savedMoods[i]);
+                    }
+
+                    dayCell.addEventListener("click", function() {
+                        selectDay(i);
+                    });
+                    calendarContainer.appendChild(dayCell);
+                }
+            }
+
+            function getMoodColor(mood){
+                const moodColors = {
+                    happy: 'lightyellow',
+                    sad: 'lightblue',
+                    tired: 'lightgray',
+                    excited: '#ffe2b1'
+                };
+                return moodColors[mood] || '#fff';
+            }
+            /*function selectDay(day){
+                const selectedDay = document.querySelectorAll('.calendar-day');
+                selectedDay.forEach((dayElement) => {
+                    if (dayElement.textContent == day) {
+                        dayElement.classList.toggle("selected");
+                    }
+                });
+            }*/
+
+            function selectDay(day){
+                const selectedDay = document.querySelectorAll('.calendar-day');
+                selectedDay.forEach((dayElement) => {
+                    if (dayElement.textContent == day) {
+                        dayElement.classList.toggle("selected");
+                        const mood = getSelectedMood();
+                        if (mood) {
+                            dayElement.style.backgroundColor = getMoodColor(mood);
+                            saveMoodForDay(day,mood);
+                        }
+                    }
+                });
+            }
+
+        function saveMoodForDay(day,mood){
+            let savedMoods = JSON.parse(localStorage.getItem('moods')) || {};
+            savedMoods[day] = mood;
+            localStorage.setItem('moods', JSON.stringify(savedMoods));
         }
 
-        setInterval(createSparkle, 300);*/
+        function getSelectedMood(){
+            const moodButtons = document.querySelectorAll('.mood-button');
+            for (let button of moodButtons) {
+                if (button.style.background == document.body.style.background) {
+                    return button.textContent.trim().toLowerCase();
+                }
+            }
+            return null;
+        }
+
+        let selectedMood = null;
 
         function changeMood(mood) {
             let colors = {
@@ -139,15 +217,50 @@
                 sad: 'rgb(0, 0, 139)',
                 tired: 'rgba(0, 0, 0, 0.8)',
                 excited: 'rgba(139, 0, 0, 0.8)'
-            }
+            };
             
+            let messages = {
+                happy: [
+                    "You're shining bright today!", 
+                    "Keep smiling!", 
+                    "Happiness looks good on you :)",
+                    "Yay! I'm so happy for you! ^_^",
+                    "Your smile makes me happy! :DD"],
+                sad: [
+                    "It's okay to feel down.", 
+                    "Sending you a virtual hug <3", 
+                    "You're not alone <3",
+                    "You're stronger than you think. One step at a time. :D",
+                    "I'm here for you, always."],
+                tired: [
+                    "Maybe a nap will help? (-_-) zzZ", 
+                    "Take a break, you deserve it!", 
+                    "Hang in there, u got this!", 
+                    "Rest is important, don't forget to recharge.",
+                    "Go easy on yourself! Your energy is improtant."],
+                excited: [
+                    "Your energy is contagious!", 
+                    "What's got u so hyped? :oo", 
+                    "i'm so excited for you!!", 
+                    "Omg, tell me everything!! >o<",
+                    "Yayy! This is so exciting!"]
+            };
+
+            selectedMood = mood;
+
             document.body.style.background = colors[mood];
 
             let title = document.querySelector("h1");
             title.style.color = textColors[mood];
             title.style.textShadow = `2px 2px 15px ${glowColors[mood]}`;
-            
+
+            let messageBox = document.getElementById("message");
+            let randomMessage = messages[mood][Math.floor(Math.random()*messages[mood].length)];
+            messageBox.textContent = randomMessage;
+            messageBox.style.opacity = 1
         }
+
+        window.onload = generateCalendar;
     </script>
 </body>
 </html>
